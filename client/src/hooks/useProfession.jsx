@@ -27,6 +27,7 @@ export const ProfessionProvider = ({ children }) => {
     useEffect(() => {
         getProfessions();
     }, []);
+
     const errorCatcher = (error) => {
         const { message } = error.response.data;
         toast.error(message);

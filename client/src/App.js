@@ -8,23 +8,25 @@ import { ToastContainer } from "react-toastify";
 import { ProfessionProvider } from "./hooks/useProfession";
 import { QualityProvider } from "./hooks/useQuality";
 
+// ссылка на документацию farebase https://firebase.google.com/docs/reference/rest/database
+
 const App = () => {
     return (
         <div className="container">
             <Navbar />
-            <Switch>
-                <QualityProvider>
-                    <ProfessionProvider>
+            <QualityProvider>
+                <ProfessionProvider>
+                    <Switch>
                         <Route path="/login/:type?" component={Login} />
                         <Route
                             path="/users/:userId?/:edit?"
                             component={Users}
                         />
-                    </ProfessionProvider>
-                </QualityProvider>
-                <Route path="/" component={Main} />
-                <Redirect to="/" />
-            </Switch>
+                        <Route path="/" component={Main} />
+                        <Redirect to="/" />
+                    </Switch>
+                </ProfessionProvider>
+            </QualityProvider>
             <ToastContainer />
         </div>
     );
