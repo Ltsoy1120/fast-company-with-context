@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import PropTypes from "prop-types";
-import api from "../../../api";
 import UserCard from "../../ui/userCard";
 import QualitiesCard from "../../ui/qualitiesCard";
 import MeetingsCard from "../../ui/meetingsCard";
 import Comments from "../../ui/comments";
+import { useUser } from "../../../hooks/useUser";
+import { CommentsProvider } from "../../../hooks/useComments";
+import { useAuth } from "../../../hooks/useAuth";
 
 const UserPage = ({ userId }) => {
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        api.users.getById(userId).then((data) => setUser(data));
-    }, []);
-
+    const { getUserById } = useUser();
+    const { currentUser } = useAuth();
+    let user = getUserById(userId);
+    if (currentUser._id === userId) {
+        user = currentUser;
+    }
     return (
         <>
             {user && (
@@ -23,7 +25,9 @@ const UserPage = ({ userId }) => {
                             <QualitiesCard user={user} />
                             <MeetingsCard user={user} />
                         </div>
-                        <Comments userId={userId} />
+                        <CommentsProvider>
+                            <Comments userId={userId} />
+                        </CommentsProvider>
                     </div>
                 </div>
             )}

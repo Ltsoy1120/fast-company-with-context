@@ -2,17 +2,26 @@ import React, { useEffect, useState } from "react";
 import TextField from "../common/form/textField";
 import validator from "../../utils/validator";
 import CheckBoxField from "../common/form/checkBoxField";
+import { useHistory } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 // import * as yup from "yup"; // библиотека для валидации полей формы
 
 const LoginForm = () => {
+    // console.log(process.env); // для проверки переменных окружения
+    const { signIn } = useAuth();
+    const history = useHistory();
+
     const [data, setData] = useState({
         email: "",
         password: "",
         stayOn: false
     });
     const [errors, setErrors] = useState({});
+    const [enterError, setEnterError] = useState(null);
+
     const handleChange = (target) => {
         setData((prevState) => ({ ...prevState, [target.name]: target.value }));
+        setEnterError(null);
     };
     // валидация через библиотеку yup
     // const validateSchema = yup.object().shape({
@@ -82,11 +91,21 @@ const LoginForm = () => {
         return Object.keys(errors).length === 0;
     };
     const isValid = Object.keys(errors).length === 0;
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validate();
         if (!isValid) return;
         console.log(data);
+        try {
+            await signIn(data);
+            history.push(
+                history.location.state
+                    ? history.location.state.from.pathname
+                    : "/"
+            );
+        } catch (error) {
+            setEnterError(error.message);
+        }
     };
 
     return (
@@ -113,6 +132,7 @@ const LoginForm = () => {
             >
                 Оставаться в системе
             </CheckBoxField>
+            {enterError && <p className="text-danger">{enterError}</p>}
             <button
                 type="submit"
                 disabled={!isValid}

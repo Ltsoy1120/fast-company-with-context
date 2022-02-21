@@ -20,6 +20,10 @@ module.exports = {
             { anonymous: "always", named: "never" }
         ], //отсутствует пробел перед назначением функции
         "multiline-ternary": ["off"],
-        quotes: ["error", "double", { allowTemplateLiterals: true }] //двойные кавычки
+        quotes: [
+            "error",
+            "double",
+            { allowTemplateLiterals: true, avoidEscape: true }
+        ] //двойные кавычки
     }
 };

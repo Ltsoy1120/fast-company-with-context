@@ -1,17 +1,30 @@
 import React, { useEffect, useState } from "react";
 import TextField from "../common/form/textField";
 import validator from "../../utils/validator";
-import api from "../../api";
 import SelectField from "../common/form/selectField";
 import RadioField from "../common/form/radioField";
 import MultiSelectField from "../common/form/multiSelectField";
 import CheckBoxField from "../common/form/checkBoxField";
+import { useQuality } from "../../hooks/useQuality";
+import { useProfession } from "../../hooks/useProfession";
+import { useAuth } from "../../hooks/useAuth";
+import { useHistory } from "react-router-dom";
 
 const RegisterForm = () => {
-    const [professions, setProfessions] = useState();
-    const [qualities, setQualities] = useState();
+    const history = useHistory();
+    const { professions } = useProfession();
+    const professionsList = professions.map((prof) => ({
+        label: prof.name,
+        value: prof._id
+    }));
+    const { qualities } = useQuality();
+    const qualitiesList = qualities.map((qual) => ({
+        label: qual.name,
+        value: qual._id
+    }));
     const [data, setData] = useState({
         email: "",
+        name: "",
         password: "",
         profession: "",
         sex: "male",
@@ -20,10 +33,8 @@ const RegisterForm = () => {
     });
     const [errors, setErrors] = useState({});
 
-    useEffect(() => {
-        api.professions.fetchAll().then((data) => setProfessions(data));
-        api.qualities.fetchAll().then((data) => setQualities(data));
-    }, []);
+    const { signUp } = useAuth();
+
     const handleChange = (target) => {
         const { name, value } = target;
         setData((prevState) => ({ ...prevState, [name]: value }));
@@ -38,6 +49,15 @@ const RegisterForm = () => {
                 message: "Электронная почта введена не корректно"
             }
         },
+        name: {
+            isRequired: {
+                message: "Имя обязательно для заполнения"
+            },
+            min: {
+                message: "Имя должно содержать минимум 3 символа",
+                value: 3
+            }
+        },
         password: {
             isRequired: {
                 message: "Пароль обязателен для заполнения"
@@ -49,7 +69,7 @@ const RegisterForm = () => {
                 message: "Пароль должен содержать хотя бы одну цифру"
             },
             min: {
-                message: "Пароль одолжен содержать минимум 8 символов",
+                message: "Пароль должен содержать минимум 8 символов",
                 value: 8
             }
         },
@@ -75,11 +95,22 @@ const RegisterForm = () => {
         return Object.keys(errors).length === 0;
     };
     const isValid = Object.keys(errors).length === 0;
-    const handleSubmit = (e) => {
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validate();
         if (!isValid) return;
-        console.log(data);
+        const newData = {
+            ...data,
+            qualities: data.qualities.map((q) => q.value)
+        };
+        console.log("newData", newData);
+        try {
+            await signUp(newData);
+            history.push("/");
+        } catch (error) {
+            setErrors(error);
+        }
     };
     return (
         <form onSubmit={handleSubmit}>
@@ -89,6 +120,13 @@ const RegisterForm = () => {
                 value={data.email}
                 onChange={handleChange}
                 error={errors.email}
+            />
+            <TextField
+                label="Имя"
+                name="name"
+                value={data.name}
+                onChange={handleChange}
+                error={errors.name}
             />
             <TextField
                 label="Пароль"
@@ -101,7 +139,8 @@ const RegisterForm = () => {
             <SelectField
                 label="Выберите свою профессия"
                 value={data.profession}
-                options={professions}
+                name="profession"
+                options={professionsList}
                 defaultOption="Choose..."
                 onChange={handleChange}
                 error={errors.profession}
@@ -117,7 +156,7 @@ const RegisterForm = () => {
                 onChange={handleChange}
             />
             <MultiSelectField
-                options={qualities}
+                options={qualitiesList}
                 onChange={handleChange}
                 defaultValue={data.qualities}
                 name="qualities"

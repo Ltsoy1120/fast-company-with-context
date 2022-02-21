@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import Pagination from "../../common/pagination";
 import { paginate } from "../../../utils/paginate";
 import GroupList from "../../common/groupList";
-import api from "../../../api";
 import SearchStatus from "../../ui/searchStatus";
 import _ from "lodash";
 import UsersTable from "../../ui/usersTable";
 import { useUser } from "../../../hooks/useUser";
+import { useProfession } from "../../../hooks/useProfession";
+import { useAuth } from "../../../hooks/useAuth";
 
 const UsersListPage = () => {
-    const [professions, setProfessions] = useState();
+    const { currentUser } = useAuth();
+    const { professions, isLoading: professionsIsLoading } = useProfession();
     const [selectedProf, setSelectedProf] = useState();
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState({ path: "name", order: "asc" });
@@ -31,10 +33,6 @@ const UsersListPage = () => {
     };
 
     useEffect(() => {
-        api.professions.fetchAll().then((data) => setProfessions(data));
-    }, []);
-
-    useEffect(() => {
         setCurrentPage(1);
     }, [selectedProf, searchQuery]);
 
@@ -54,21 +52,27 @@ const UsersListPage = () => {
     const handleSort = (item) => {
         setSortBy(item);
     };
-    if (users) {
+    const filterUsers = (data) => {
         const filteredUsers = searchQuery
-            ? users.filter((user) =>
+            ? data.filter((user) =>
                   user.name
                       .toLowerCase()
                       .includes(searchQuery.toLocaleLowerCase())
               )
             : selectedProf
-            ? users.filter(
+            ? data.filter(
                   // user => _.isEqual(user.profession, selectedProf)
                   (user) =>
                       JSON.stringify(user.profession) ===
                       JSON.stringify(selectedProf)
               )
-            : users;
+            : data;
+        return filteredUsers.filter((user) => user._id !== currentUser._id);
+    };
+
+    if (users) {
+        const filteredUsers = filterUsers(users);
+
         const count = filteredUsers && filteredUsers.length;
         // сортировка массива с помощью метода lodash
         const sortedUsers = _.orderBy(
@@ -86,7 +90,7 @@ const UsersListPage = () => {
         return (
             // <div className="container mt-5"></div>
             <div className="d-flex align-items-start">
-                {professions && (
+                {professions && !professionsIsLoading && (
                     <div className="d-flex flex-column flex-shrink-0 me-3">
                         <GroupList
                             items={professions}

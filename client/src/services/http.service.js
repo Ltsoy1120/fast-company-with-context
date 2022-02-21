@@ -1,18 +1,42 @@
 import axios from "axios";
 import { toast } from "react-toastify"; // для вывода ошибки на фронте для пользователя
 import configFile from "../config.json";
+import { httpAuth } from "../hooks/useAuth";
+import localStorageService from "./localStorage.service";
 
 // axios.defaults.baseURL = configFile.apiEndpoint; // через сервер
 
 // -----эта часть кода для запросов в FareBase------
-axios.defaults.baseURL = configFile.FireBaseEndpoint;
+// axios.defaults.baseURL = configFile.FireBaseEndpoint;
+// --добавляем url адрес не глобальному axios, а к экземпляру и получаем http -- метод создания инстанса, для создания нескольких вариантов
+const http = axios.create({
+    baseURL: configFile.FireBaseEndpoint
+});
 
-axios.interceptors.request.use(
-    function (config) {
+http.interceptors.request.use(
+    async function (config) {
         if (configFile.isFireBase) {
             const containSlash = /\/$/gi.test(config.url);
             config.url =
                 (containSlash ? config.url.slice(0, -1) : config.url) + ".json";
+            const expiresDate = localStorageService.getTokenExpiresDate();
+            const refreshToken = localStorageService.getRefreshToken();
+            if (refreshToken && expiresDate < new Date()) {
+                const { data } = await httpAuth.post("token", {
+                    grant_type: "refresh_token",
+                    refresh_token: refreshToken
+                });
+                localStorageService.setTokens({
+                    expiresIn: data.expires_in,
+                    idToken: data.id_token,
+                    localId: data.user_id,
+                    refreshToken: data.refresh_token
+                });
+            }
+            const accessToken = localStorageService.getAccessToken();
+            if (accessToken) {
+                config.params = { ...config.params, auth: accessToken };
+            }
         }
         return config;
     },
@@ -22,17 +46,16 @@ axios.interceptors.request.use(
 );
 // трансформация из объекта в массив
 function transformData(data) {
-    return data
-        ? Object.keys(data).map((key) => {
-              return { ...data[key] };
-          })
-        : [];
+    return data && !data._id
+        ? Object.keys(data).map((key) => ({ ...data[key] }))
+        : data;
 }
 // -------------------
-axios.interceptors.response.use(
-    // (res) => res, // первоначальный вариант для обычного запроса с сервера, ниже для FareBase
+http.interceptors.response.use(
     (res) => {
-        res.data = { content: transformData(res.data) };
+        if (configFile.isFireBase) {
+            res.data = { content: transformData(res.data) };
+        }
         return res;
     },
     (error) => {
@@ -52,10 +75,10 @@ axios.interceptors.response.use(
 );
 
 const httpService = {
-    get: axios.get,
-    post: axios.post,
-    put: axios.put,
-    delete: axios.delete
+    get: http.get,
+    post: http.post,
+    put: http.put,
+    delete: http.delete
 };
 
 export default httpService;

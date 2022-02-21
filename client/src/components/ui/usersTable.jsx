@@ -6,7 +6,7 @@ import Table, { TableBody, TableHeader } from "../common/table";
 import QualitiesList from "./qualieties";
 import Profession from "./profession";
 
-const UsersTable = ({ users, selectedSort, onSort, onBookmark, onDelete }) => {
+const UsersTable = ({ users, selectedSort, onSort, onBookmark }) => {
     const columns = {
         name: {
             path: "name",
@@ -37,16 +37,6 @@ const UsersTable = ({ users, selectedSort, onSort, onBookmark, onDelete }) => {
                     status={user.bookmark}
                 />
             )
-        },
-        delete: {
-            component: (user) => (
-                <button
-                    className="btn btn-danger"
-                    onClick={() => onDelete(user._id)}
-                >
-                    delete
-                </button>
-            )
         }
     };
     // два варианта рендеринга таблицы с children и без
@@ -68,7 +58,6 @@ UsersTable.propTypes = {
     users: PropTypes.array.isRequired,
     onSort: PropTypes.func.isRequired,
     selectedSort: PropTypes.object.isRequired,
-    onBookmark: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired
+    onBookmark: PropTypes.func.isRequired
 };
 export default UsersTable;
